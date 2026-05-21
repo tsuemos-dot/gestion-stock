@@ -2968,4 +2968,35 @@ async function init() {
   }
 }
 
+// ─── TEST CONNEXION DB ───
+async function testConnection() {
+  try {
+    const result = await apiRequest('bootstrap.php');
+    const btn = document.querySelector('button[onclick="testConnection()"]');
+    
+    if (result && result.materials !== undefined) {
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Connecté ✓';
+      btn.style.backgroundColor = 'var(--green)';
+      showToast('✅ Connexion MySQL réussie ! Base de données opérationnelle.', 'success');
+      
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fa-solid fa-database"></i> Tester connexion DB';
+        btn.style.backgroundColor = '';
+      }, 3000);
+    } else {
+      throw new Error('Réponse invalide');
+    }
+  } catch (error) {
+    const btn = document.querySelector('button[onclick="testConnection()"]');
+    btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Échec';
+    btn.style.backgroundColor = 'var(--red)';
+    showToast('❌ Échec connexion: ' + error.message, 'error');
+    
+    setTimeout(() => {
+      btn.innerHTML = '<i class="fa-solid fa-database"></i> Tester connexion DB';
+      btn.style.backgroundColor = '';
+    }, 3000);
+  }
+}
+
 init();
