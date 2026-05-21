@@ -3,24 +3,6 @@ declare(strict_types=1);
 
 require __DIR__ . '/db.php';
 
-// Test de connexion simple (sans auth requise)
-if (isset($_GET['test_connection'])) {
-    try {
-        $pdo = db();
-        json_response([
-            'success' => true,
-            'message' => 'Connexion MySQL réussie !',
-            'database' => DB_NAME,
-            'host' => DB_HOST
-        ]);
-    } catch (Throwable $e) {
-        json_response([
-            'success' => false,
-            'message' => 'Échec de connexion : ' . $e->getMessage()
-        ], 500);
-    }
-}
-
 try {
     $pdo = db();
     $user = require_auth($pdo);
