@@ -2970,32 +2970,35 @@ async function init() {
 
 // ─── TEST CONNEXION DB ───
 async function testConnection() {
+  const resultDiv = document.getElementById('db-test-result');
+  if (resultDiv) {
+    resultDiv.innerHTML = '⏳ Test en cours...';
+    resultDiv.style.color = 'blue';
+  }
+  
   try {
-    const result = await apiRequest('bootstrap.php');
-    const btn = document.querySelector('button[onclick="testConnection()"]');
-    
-    if (result && result.materials !== undefined) {
-      btn.innerHTML = '<i class="fa-solid fa-check"></i> Connecté ✓';
-      btn.style.backgroundColor = 'var(--green)';
-      showToast('✅ Connexion MySQL réussie ! Base de données opérationnelle.', 'success');
-      
-      setTimeout(() => {
-        btn.innerHTML = '<i class="fa-solid fa-database"></i> Tester connexion DB';
-        btn.style.backgroundColor = '';
-      }, 3000);
+    const response = await fetch('api/bootstrap.php?test_connection=1');
+    const data = await response.json();
+
+    if (data.success) {
+      if (resultDiv) {
+        resultDiv.innerHTML = '✅ Connecté avec succès à MySQL ! Base: ' + data.database;
+        resultDiv.style.color = 'green';
+      }
+      showToast('✅ ' + data.message, 'success');
     } else {
-      throw new Error('Réponse invalide');
+      if (resultDiv) {
+        resultDiv.innerHTML = '❌ Échec : ' + (data.message || 'Erreur inconnue');
+        resultDiv.style.color = 'red';
+      }
+      showToast('❌ Erreur de connexion : ' + (data.message || 'Vérifie db.php'), 'error');
     }
   } catch (error) {
-    const btn = document.querySelector('button[onclick="testConnection()"]');
-    btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Échec';
-    btn.style.backgroundColor = 'var(--red)';
-    showToast('❌ Échec connexion: ' + error.message, 'error');
-    
-    setTimeout(() => {
-      btn.innerHTML = '<i class="fa-solid fa-database"></i> Tester connexion DB';
-      btn.style.backgroundColor = '';
-    }, 3000);
+    if (resultDiv) {
+      resultDiv.innerHTML = '❌ Erreur réseau : ' + error.message;
+      resultDiv.style.color = 'red';
+    }
+    showToast('❌ Impossible de joindre l\'API. Vérifie que le dossier "api" existe bien.', 'error');
   }
 }
 
