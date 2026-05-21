@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion de Stock — Atelier Rangement</title>
+<link rel="icon" href="assets/logo-king-rangement.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-pending">
+
+<section class="login-screen" id="login-screen">
+  <form class="login-card" onsubmit="login(event)">
+    <img src="assets/logo-king-rangement.png" alt="King Rangement" class="login-logo">
+    <h1>Connexion</h1>
+    <p>Acces securise a la gestion de stock et aux devis projet.</p>
+    <div class="form-group">
+      <label class="form-label">Utilisateur</label>
+      <input type="text" id="login-username" autocomplete="username" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe</label>
+      <input type="password" id="login-password" autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary login-submit" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
+    <p class="login-error" id="login-error"></p>
+  </form>
+</section>
+
+<header>
+  <div class="logo">
+    <img src="assets/logo-king-rangement.png" alt="King Rangement" class="logo-img">
+  </div>
+  <div class="header-right">
+    <span class="header-badge" id="user-badge" style="display:none"></span>
+    <span class="header-badge" id="h-badge">Chargement...</span>
+    <button class="btn btn-sm" id="export-csv-btn" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
+    <button class="btn btn-sm" id="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Quitter</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <p class="sidebar-label">Navigation</p>
+    <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard', this)"><i class="fa-solid fa-gauge-high"></i> Tableau de bord</button>
+    <button class="nav-item" data-page="stock" onclick="showPage('stock', this)"><i class="fa-solid fa-box"></i> Stock <span class="nav-badge" id="nb-alert" style="display:none"></span></button>
+    <button class="nav-item" data-page="sorties" onclick="showPage('sorties', this)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sorties</button>
+    <button class="nav-item" data-page="historique" onclick="showPage('historique', this)"><i class="fa-solid fa-clock-rotate-left"></i> Historique</button>
+    <button class="nav-item" data-page="ajout" onclick="showPage('ajout', this)"><i class="fa-solid fa-plus"></i> Ajouter</button>
+    <button class="nav-item" data-page="commandes" onclick="showPage('commandes', this)"><i class="fa-solid fa-truck"></i> Commandes <span class="nav-badge" id="nb-orders" style="display:none"></span></button>
+    <button class="nav-item" data-page="stats" onclick="showPage('stats', this)"><i class="fa-solid fa-chart-line"></i> Bilans</button>
+    <div class="sidebar-divider"></div>
+    <p class="sidebar-label">Outils</p>
+    <button class="nav-item" data-page="simulation" onclick="showPage('simulation', this)"><i class="fa-solid fa-calculator"></i> Projets / Devis</button>
+    <button class="nav-item" data-page="parametres" onclick="showPage('parametres', this)"><i class="fa-solid fa-gear"></i> Paramètres</button>
+  </aside>
+
+  <!-- Main content -->
+  <main>
+
+    <!-- Mobile nav -->
+    <div class="mobile-nav" id="mobile-nav">
+      <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard', this)"><i class="fa-solid fa-gauge-high"></i> Tableau de bord</button>
+      <button class="nav-item" data-page="stock" onclick="showPage('stock', this)"><i class="fa-solid fa-box"></i> Stock</button>
+      <button class="nav-item" data-page="sorties" onclick="showPage('sorties', this)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sorties</button>
+      <button class="nav-item" data-page="historique" onclick="showPage('historique', this)"><i class="fa-solid fa-clock-rotate-left"></i> Historique</button>
+      <button class="nav-item" data-page="ajout" onclick="showPage('ajout', this)"><i class="fa-solid fa-plus"></i> Ajouter</button>
+      <button class="nav-item" data-page="commandes" onclick="showPage('commandes', this)"><i class="fa-solid fa-truck"></i> Commandes</button>
+      <button class="nav-item" data-page="stats" onclick="showPage('stats', this)"><i class="fa-solid fa-chart-line"></i> Bilans</button>
+      <button class="nav-item" data-page="simulation" onclick="showPage('simulation', this)"><i class="fa-solid fa-calculator"></i> Devis</button>
+    </div>
+
+    <!-- ─── DASHBOARD ─── -->
+    <div id="p-dashboard" class="page active">
+      <div class="page-header">
+        <h1 class="page-title">Tableau de bord</h1>
+        <p class="page-sub">Vue d'ensemble de votre atelier — <span id="d-date"></span></p>
+        <button class="btn btn-primary" onclick="testConnection()"><i class="fa-solid fa-database"></i> Tester connexion DB</button>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Références</div><div class="metric-value" id="d-total">—</div><div class="metric-sub">matériaux actifs</div></div>
+        <div class="metric red"><div class="metric-label">Alertes</div><div class="metric-value" id="d-alerts">—</div><div class="metric-sub">à réapprovisionner</div></div>
+        <div class="metric blue"><div class="metric-label">Commandes</div><div class="metric-value" id="d-orders">—</div><div class="metric-sub">en cours</div></div>
+        <div class="metric amber"><div class="metric-label">Sorties</div><div class="metric-value" id="d-movements">—</div><div class="metric-sub">30 derniers jours</div></div>
+        <div class="metric green"><div class="metric-label">Valeur stock</div><div class="metric-value" id="d-value">—</div><div class="metric-sub">FCFA total</div></div>
+      </div>
+
+      <div class="section-title">Alertes & seuils critiques</div>
+      <div class="alert-list" id="alert-list"></div>
+
+      <div class="section-title" style="margin-top:1.5rem;">Dernières sorties internes</div>
+      <div class="alert-list" id="movement-list"></div>
+
+      <div class="section-title" style="margin-top:1.5rem;">Consommation hebdomadaire (top 5)</div>
+      <div class="card" id="conso-chart" style="padding:1rem 1.25rem;"></div>
+    </div>
+
+    <!-- ─── STOCK ─── -->
+    <div id="p-stock" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Gestion du stock</h1>
+        <p class="page-sub">Ajoutez, modifiez ou supprimez vos matériaux</p>
+      </div>
+
+      <div class="filters">
+        <input type="text" id="s-search" placeholder="Rechercher..." oninput="renderStock()" style="max-width:200px;">
+        <select id="s-cat" onchange="renderStock()">
+          <option value="">Toutes catégories</option>
+          <option>Quincaillerie</option><option>Finition</option><option>Visserie</option><option>Accessoires</option>
+        </select>
+        <select id="s-status" onchange="renderStock()">
+          <option value="">Tous statuts</option>
+          <option value="ok">OK</option><option value="warn">Faible</option><option value="alert">Critique</option>
+        </select>
+        <span style="font-size:12px;color:var(--text2);" id="s-count"></span>
+      </div>
+
+      <div class="card table-wrap">
+        <table>
+          <thead><tr>
+            <th>Matériau</th><th>Catégorie</th><th>Quantité</th><th>Seuil</th><th>Statut</th><th>Niveau</th><th>Valeur</th><th>Fournisseur</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="stock-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── ENTRÉES ─── -->
+    <div id="p-entrees" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Entrées de stock</h1>
+        <p class="page-sub">Enregistrez un arrivage sans créer une commande fournisseur</p>
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:12px;"><i class="fa-solid fa-arrow-down" style="margin-right:6px;color:var(--green);"></i>Nouvelle entrée directe</p>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Produit / matériau</label><select id="in-item" style="width:100%;"></select></div>
+          <div class="form-group"><label class="form-label">Quantité reçue</label><input type="number" id="in-qty" value="1" min="0" step="1"></div>
+          <div class="form-group"><label class="form-label">Fournisseur</label><input type="text" id="in-supplier" list="supplier-list" placeholder="Nom fournisseur"></div>
+          <div class="form-group"><label class="form-label">Référence / bon</label><input type="text" id="in-reference" placeholder="BL, reçu, facture"></div>
+          <div class="form-group"><label class="form-label">Date</label><input type="date" id="in-date"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addStockEntry()"><i class="fa-solid fa-check"></i> Enregistrer l'entrée</button>
+          <button class="btn" onclick="clearEntryForm()"><i class="fa-solid fa-rotate-left"></i> Effacer</button>
+        </div>
+      </div>
+
+      <div class="section-title">Dernières entrées directes</div>
+      <div class="card table-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Produit</th><th>Quantité</th><th>Avant</th><th>Après</th><th>Fournisseur</th><th>Notes</th>
+          </tr></thead>
+          <tbody id="entries-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── SORTIES ─── -->
+    <div id="p-sorties" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Sorties internes</h1>
+        <p class="page-sub">Enregistrez les produits utilisés dans l'entreprise, sans vente</p>
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:12px;"><i class="fa-solid fa-arrow-right-from-bracket" style="margin-right:6px;color:var(--blue);"></i>Sorties multiples de stock</p>
+        <div class="form-grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+          <div class="form-group"><label class="form-label">Service / projet <span style="color:var(--red);">*</span></label><input type="text" id="m-destination-global" placeholder="ex : Atelier, chantier, maintenance"></div>
+          <div class="form-group"><label class="form-label">Demandé par <span style="color:var(--red);">*</span></label><input type="text" id="m-requester-global" placeholder="Nom de la personne"></div>
+          <div class="form-group"><label class="form-label">Date</label><input type="date" id="m-date-global"></div>
+        </div>
+        <div class="section-title" style="margin-top: 1.5rem; margin-bottom: 1rem;">Matériaux à retirer du stock</div>
+        <div id="movements-rows" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;"></div>
+        <div class="btn-row" style="margin-top:1rem;">
+          <button class="btn" onclick="addMovementRow()"><i class="fa-solid fa-plus"></i> Ajouter un matériau</button>
+          <button class="btn btn-primary" onclick="saveBulkMovements()"><i class="fa-solid fa-check"></i> Enregistrer toutes les sorties</button>
+          <button class="btn" onclick="clearMovementForm()"><i class="fa-solid fa-rotate-left"></i> Effacer tout</button>
+        </div>
+      </div>
+
+      <div class="section-title">Historique des sorties</div>
+      <div class="card table-wrap">
+        <table>
+          <thead><tr>
+            <th>Produit</th><th>Quantité</th><th>Service / projet</th><th>Demandé par</th><th>Date</th><th>Notes</th><th>Type</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="movements-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── HISTORIQUE ─── -->
+    <div id="p-historique" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Historique complet</h1>
+        <p class="page-sub">Entrées, sorties, corrections et annulations du stock</p>
+      </div>
+
+      <div class="filters">
+        <input type="text" id="h-search" placeholder="Rechercher..." oninput="renderHistory()" style="max-width:220px;">
+        <select id="h-type" onchange="renderHistory()">
+          <option value="">Tous mouvements</option>
+          <option value="entree">Entrées</option>
+          <option value="sortie">Sorties</option>
+          <option value="correction">Corrections</option>
+          <option value="annulation">Annulations</option>
+        </select>
+        <button class="btn btn-danger" onclick="clearHistory()"><i class="fa-solid fa-trash"></i> Vider l'historique</button>
+        <span style="font-size:12px;color:var(--text2);" id="h-count"></span>
+      </div>
+
+      <div class="card table-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Type</th><th>Produit</th><th>Mouvement</th><th>Avant</th><th>Après</th><th>Service / projet</th><th>Personne</th><th>Utilisateur</th><th>Source</th><th>Notes</th>
+          </tr></thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── AJOUT ─── -->
+    <div id="p-ajout" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Ajouter un matériau</h1>
+        <p class="page-sub">Enregistrez un nouveau matériau dans votre stock</p>
+      </div>
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Nom</label><input type="text" id="f-name" placeholder="ex : Panneau MDF 18mm"></div>
+          <div class="form-group"><label class="form-label">Catégorie</label>
+            <select id="f-cat">
+              <option>Quincaillerie</option><option>Finition</option><option>Visserie</option><option>Accessoires</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Quantité</label><input type="number" id="f-qty" value="0" min="0" step="0.01"><span class="form-note">Quantité disponible en stock pour ce matériau.</span></div>
+          <div class="form-group"><label class="form-label">Unité</label>
+            <select id="f-unit" onchange="updateAddMaterialQuantitySteps()"><option>m²</option><option>ml</option><option>pièce(s)</option><option>kg</option><option>litre(s)</option><option>paquet(s)</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">Seuil d'alerte</label><input type="number" id="f-min" value="5" min="0" step="0.01"><span class="form-note">Seuil sous lequel votre matériau sera signalé comme faible.</span></div>
+          <div class="form-group"><label class="form-label">Prix unitaire (FCFA)</label><input type="number" id="f-price" value="0" min="0" step="0.01"><span class="form-note">Valeur au kg ou à l'unité selon l'unité choisie.</span></div>
+          <div class="form-group"><label class="form-label">Conso. hebdo. estimée</label><input type="number" id="f-conso" value="0" min="0" step="0.01"><span class="form-note">Consommation moyenne prévue par semaine.</span></div>
+          <div class="form-group"><label class="form-label">Fournisseur habituel</label><input type="text" id="f-supplier" list="supplier-list" placeholder="Nom fournisseur"><span class="form-note">Facultatif, utile pour retrouver le bon contact.</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addItem()"><i class="fa-solid fa-plus"></i> Ajouter au stock</button>
+          <button class="btn" onclick="clearForm()"><i class="fa-solid fa-rotate-left"></i> Effacer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── COMMANDES ─── -->
+    <div id="p-commandes" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Commandes fournisseurs</h1>
+        <p class="page-sub">Planifiez et suivez vos réapprovisionnements</p>
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:12px;"><i class="fa-solid fa-truck" style="margin-right:6px;color:var(--blue);"></i>Commande groupée fournisseur</p>
+        <div class="form-grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+          <div class="form-group"><label class="form-label">Fournisseur <span style="color:var(--red);">*</span></label><input type="text" id="o-supplier" list="supplier-list" placeholder="Nom du fournisseur" required></div>
+          <div class="form-group"><label class="form-label">Date <span style="color:var(--red);">*</span></label><input type="date" id="o-date" required></div>
+          <div class="form-group"><label class="form-label">Délai estimé (jours) <span style="color:var(--red);">*</span></label><input type="number" id="o-delay" value="7" min="1" required></div>
+        </div>
+        <div class="section-title" style="margin-top:1.5rem;margin-bottom:1rem;">Matériaux à commander</div>
+        <div id="orders-rows" style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem;"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="addOrderRow()"><i class="fa-solid fa-plus"></i> Ajouter un matériau</button>
+          <button class="btn btn-primary" onclick="saveBulkOrders()"><i class="fa-solid fa-truck"></i> Enregistrer la commande</button>
+          <button class="btn" onclick="clearOrderForm()"><i class="fa-solid fa-rotate-left"></i> Effacer tout</button>
+        </div>
+      </div>
+
+      <div class="section-title">Commandes en cours</div>
+      <div class="card table-wrap">
+        <table>
+          <thead><tr>
+            <th>Matériau</th><th>Qty</th><th>Fournisseur</th><th>Date</th><th>Prévue</th><th>Coût</th><th>Statut</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="orders-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── BILANS ─── -->
+    <div id="p-stats" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Bilans</h1>
+        <p class="page-sub">Analyse des mouvements de stock sur une période</p>
+      </div>
+
+      <div class="filters bilan-filters">
+        <select id="bilan-period" onchange="renderStats()">
+          <option value="today">Aujourd'hui</option>
+          <option value="7">7 derniers jours</option>
+          <option value="30" selected>30 derniers jours</option>
+          <option value="month">Ce mois-ci</option>
+          <option value="previous-month">Mois précédent</option>
+          <option value="custom">Période personnalisée</option>
+        </select>
+        <input type="date" id="bilan-start" onchange="setBilanCustomPeriod()">
+        <input type="date" id="bilan-end" onchange="setBilanCustomPeriod()">
+        <button class="btn" onclick="renderStats()"><i class="fa-solid fa-rotate"></i> Actualiser</button>
+        <button class="btn" onclick="printBilan()"><i class="fa-solid fa-print"></i> Imprimer</button>
+        <button class="btn" onclick="exportBilanCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
+      </div>
+
+      <div class="bilan-period-label" id="bilan-range-label"></div>
+
+      <div class="metrics" id="bilan-summary"></div>
+
+      <div class="bilan-grid">
+        <div class="card bilan-card-wide">
+          <p class="card-kicker">Bilan des mouvements</p>
+          <div class="table-wrap compact-table">
+            <table>
+              <thead><tr>
+                <th>Produit</th><th>Entrées</th><th>Sorties</th><th>Stock actuel</th><th>Valeur sortie</th><th>Dernier mouvement</th>
+              </tr></thead>
+              <tbody id="bilan-movements-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="card-kicker">Produits les plus consommés</p>
+          <div id="bilan-top-products"></div>
+        </div>
+
+        <div class="card">
+          <p class="card-kicker">Consommation par service / projet</p>
+          <div id="bilan-destinations"></div>
+        </div>
+
+        <div class="card">
+          <p class="card-kicker">Comparaison période précédente</p>
+          <div id="bilan-comparison"></div>
+        </div>
+
+        <div class="card">
+          <p class="card-kicker">Historique par utilisateur</p>
+          <div id="bilan-actors"></div>
+        </div>
+
+        <div class="card bilan-card-wide">
+          <p class="card-kicker">À commander en priorité</p>
+          <div class="table-wrap compact-table">
+            <table>
+              <thead><tr>
+                <th>Produit</th><th>Stock</th><th>Seuil</th><th>Conso./sem.</th><th>Semaines restantes</th><th>Qté conseillée</th><th>Fournisseur</th><th>Action</th>
+              </tr></thead>
+              <tbody id="bilan-reorder-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="card-kicker">Valorisation du stock</p>
+          <div id="bilan-finance"></div>
+        </div>
+
+        <div class="card">
+          <p class="card-kicker">Stock dormant</p>
+          <div id="bilan-dormant"></div>
+        </div>
+
+        <div class="card bilan-card-wide">
+          <p class="card-kicker">Alertes intelligentes</p>
+          <div id="bilan-anomalies"></div>
+        </div>
+
+        <div class="card bilan-card-wide">
+          <p class="card-kicker">Inventaire physique</p>
+          <div class="inventory-form">
+            <select id="inventory-item" onchange="updateInventoryQuantityStep()"></select>
+            <input type="number" id="inventory-counted" min="0" step="1" placeholder="Stock compté">
+            <input type="text" id="inventory-notes" placeholder="Note de comptage">
+            <button class="btn btn-primary" onclick="savePhysicalInventory()"><i class="fa-solid fa-clipboard-check"></i> Enregistrer l'écart</button>
+          </div>
+          <p class="form-note" id="inventory-current-stock">Sélectionnez un matériau pour voir le stock système.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FOURNISSEURS ─── -->
+    <div id="p-fournisseurs" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Fournisseurs</h1>
+        <p class="page-sub">Contacts, délais habituels et produits fournis</p>
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:12px;"><i class="fa-solid fa-address-book" style="margin-right:6px;color:var(--blue);"></i>Fiche fournisseur</p>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Nom</label><input type="text" id="sp-name" placeholder="Nom fournisseur"></div>
+          <div class="form-group"><label class="form-label">Contact</label><input type="text" id="sp-contact" placeholder="Personne à contacter"></div>
+          <div class="form-group"><label class="form-label">Téléphone</label><input type="text" id="sp-phone" placeholder="+229..."></div>
+          <div class="form-group"><label class="form-label">Email</label><input type="text" id="sp-email" placeholder="contact@fournisseur.com"></div>
+          <div class="form-group"><label class="form-label">Adresse</label><input type="text" id="sp-address" placeholder="Ville, quartier, rue"></div>
+          <div class="form-group"><label class="form-label">Délai habituel (jours)</label><input type="number" id="sp-delay" value="7" min="1"></div>
+          <div class="form-group"><label class="form-label">Produits fournis</label><input type="text" id="sp-products" placeholder="Bois, visserie, peinture..."></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveSupplier()"><i class="fa-solid fa-check"></i> <span id="sp-save-label">Enregistrer</span></button>
+          <button class="btn" onclick="clearSupplierForm()"><i class="fa-solid fa-rotate-left"></i> Effacer</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <span style="font-size:12px;color:var(--text2);" id="suppliers-count"></span>
+      </div>
+
+      <div class="card table-wrap">
+        <table>
+          <thead><tr>
+            <th>Fournisseur</th><th>Contact</th><th>Téléphone</th><th>Email</th><th>Délai</th><th>Produits</th><th>Notes</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="suppliers-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── SIMULATION ─── -->
+    <div id="p-simulation" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Projets / Devis</h1>
+        <p class="page-sub">Selectionnez les materiaux, indiquez le nombre de pieces et imprimez le devis</p>
+      </div>
+      <div class="card" style="margin-bottom:1.5rem;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:12px;"><i class="fa-solid fa-file-invoice" style="margin-right:6px;color:var(--blue);"></i>Nouveau devis projet</p>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Projet</label><input type="text" id="quote-project" value="Commode" placeholder="ex : Commode" oninput="calculateProjectQuote()"></div>
+          <div class="form-group"><label class="form-label">Client</label><input type="text" id="quote-client" placeholder="Nom du client" oninput="calculateProjectQuote()"></div>
+          <div class="form-group"><label class="form-label">Nombre de pieces</label><input type="number" id="quote-pieces" value="1" min="1" step="1" oninput="calculateProjectQuote()"></div>
+        </div>
+        <div class="section-title">Materiaux necessaires</div>
+        <div id="quote-rows" class="quote-rows"></div>
+        <div class="btn-row" style="margin-top:1rem;">
+          <button class="btn" onclick="addQuoteRow()"><i class="fa-solid fa-plus"></i> Ajouter un materiau</button>
+          <button class="btn btn-primary" onclick="saveQuote()"><i class="fa-solid fa-check"></i> Enregistrer le devis</button>
+        </div>
+      </div>
+      <div id="quote-result"></div>
+
+      <div class="section-title" style="margin-top:2rem;">Historique des devis</div>
+      <div id="quotes-history" class="alert-list"></div>
+    </div>
+
+    <!-- ─── PARAMÈTRES ─── -->
+    <div id="p-parametres" class="page">
+      <div class="page-header">
+        <h1 class="page-title">Paramètres</h1>
+        <p class="page-sub">Personnalisez votre atelier</p>
+      </div>
+      <div class="card" style="margin-bottom:1rem;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:12px;">Informations de l'atelier</p>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Nom de l'atelier</label><input type="text" id="p-atelier" placeholder="Mon Atelier Rangement"></div>
+          <div class="form-group"><label class="form-label">Devise</label>
+            <select id="p-devise"><option value="FCFA">FCFA</option><option value="EUR">EUR</option><option value="USD">USD</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveParams()"><i class="fa-solid fa-check"></i> Enregistrer</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1rem;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:12px;">Gestion des données</p>
+        <div class="btn-row">
+          <button class="btn" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Exporter le stock (CSV)</button>
+          <button class="btn btn-danger" onclick="resetData()"><i class="fa-solid fa-trash"></i> Réinitialiser toutes les données</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  Atelier Stock &copy; 2025 — Gestion de stock artisanal · Données sauvegardées localement dans votre navigateur
+</footer>
+
+<div class="modal-backdrop" id="edit-item-modal" onclick="if(event.target===this) closeEditItemForm()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div>
+        <h2>Modifier le produit</h2>
+        <p>Fiche stock complète</p>
+      </div>
+      <button class="btn btn-sm btn-icon" onclick="closeEditItemForm()" title="Fermer"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveEditItem(); return false;">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Nom</label><input type="text" id="e-name" required></div>
+        <div class="form-group"><label class="form-label">Catégorie</label>
+          <select id="e-cat">
+            <option>Quincaillerie</option><option>Finition</option><option>Visserie</option><option>Accessoires</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Quantité</label><input type="number" id="e-qty" min="0" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Unité</label>
+          <select id="e-unit" onchange="updateEditMaterialQuantitySteps()"><option>m²</option><option>ml</option><option>pièce(s)</option><option>kg</option><option>litre(s)</option><option>paquet(s)</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Seuil d'alerte</label><input type="number" id="e-min" min="0" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Prix unitaire</label><input type="number" id="e-price" min="0" step="1"></div>
+        <div class="form-group"><label class="form-label">Conso. hebdo.</label><input type="number" id="e-conso" min="0" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Fournisseur</label><input type="text" id="e-supplier" list="supplier-list"></div>
+      </div>
+      <div class="btn-row modal-actions">
+        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i> Enregistrer</button>
+        <button class="btn" type="button" onclick="closeEditItemForm()"><i class="fa-solid fa-xmark"></i> Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<datalist id="supplier-list"></datalist>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
